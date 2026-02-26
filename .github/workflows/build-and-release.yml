@@ -98,10 +98,10 @@ jobs:
         $outputDir = "NetworkWatcher-Build-Artifacts"
         New-Item -ItemType Directory -Force -Path $outputDir
 
-        # Copy binaries (excluding VSIX)
+        # Copy binaries (including VSIX)
         $releaseDir = "NetworkWatcherExtension\bin\Release"
         Get-ChildItem -Path $releaseDir -Recurse | Where-Object { 
-          $_.Extension -in @('.dll', '.pdb', '.xml', '.json') -and 
+          $_.Extension -in @('.dll', '.pdb', '.xml', '.json', '.vsix') -and 
           -not $_.FullName.Contains('obj') 
         } | ForEach-Object {
           $relativePath = $_.FullName.Substring((Resolve-Path $releaseDir).Path.Length + 1)
@@ -151,22 +151,26 @@ jobs:
 
           ### 📦 Downloads
 
-          - **NetworkWatcherExtension.vsix** - Visual Studio Extension (ready to install)
-          - **NetworkWatcher-Build-Artifacts.zip** - Compiled binaries (DLLs, PDBs, etc.)
+          - **NetworkWatcherExtension.vsix** - Visual Studio Extension (standalone installer)
+          - **NetworkWatcher-Build-Artifacts.zip** - Complete package (VSIX + all binaries, PDBs, symbols)
 
           ### Installation
 
-          #### For End Users (Install Extension):
+          #### Quick Install (Most Users):
           1. Download the **`.vsix`** file below
           2. Close all Visual Studio instances
           3. Double-click the `.vsix` file to install
           4. Restart Visual Studio
           5. Open **View → Other Windows → Network Watcher**
 
-          #### For Developers (Use Binaries):
+          #### Complete Package (Developers/Debugging):
           1. Download the **`Build-Artifacts.zip`** file
-          2. Extract to see compiled DLLs, PDBs, and debug symbols
-          3. Useful for debugging or referencing in your projects
+          2. Extract to see:
+             - VSIX file (for installation)
+             - Compiled DLLs (for referencing)
+             - PDB files (for debugging with symbols)
+             - XML docs (for IntelliSense)
+          3. Use PDB files for debugging with full source line numbers
 
           ### Features
           - 🌐 HTTP/HTTPS traffic monitoring

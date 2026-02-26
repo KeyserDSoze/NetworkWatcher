@@ -66,8 +66,8 @@ jobs:
 
         $releaseDir = "NetworkWatcherExtension\bin\Release"
         Get-ChildItem -Path $releaseDir -Recurse | Where-Object { 
-          $_.Extension -in @('.dll', '.pdb', '.xml', '.json') -and 
-          -not $_.FullName.Contains('obj') 
+          $_.Extension -in @('.dll', '.pdb', '.xml', '.json', '.vsix') -and 
+          -not $_.FullName.Contains('obj')
         } | ForEach-Object {
           $relativePath = $_.FullName.Substring((Resolve-Path $releaseDir).Path.Length + 1)
           $targetPath = Join-Path $outputDir $relativePath

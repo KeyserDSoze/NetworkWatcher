@@ -2,9 +2,12 @@
 
 ## What's Included
 
-The **NetworkWatcher-Build-Artifacts.zip** contains all compiled binaries from the Release build, including:
+The **NetworkWatcher-Build-Artifacts.zip** contains all compiled outputs from the Release build, including:
 
 ### 📦 Contents
+
+- **VSIX** - Complete Visual Studio Extension package
+  - `NetworkWatcherExtension.vsix` - Ready to install
 
 - **DLLs** - Compiled assemblies
   - `NetworkWatcherExtension.dll` - Main extension assembly
@@ -52,7 +55,8 @@ Developers can:
 
 ```
 NetworkWatcher-Build-Artifacts.zip
-└── [various DLLs, PDBs, XML files from bin\Release]
+└── [all files from bin\Release]
+    ├── NetworkWatcherExtension.vsix     ← VSIX file
     ├── NetworkWatcherExtension.dll
     ├── NetworkWatcherExtension.pdb
     ├── Titanium.Web.Proxy.dll
@@ -63,7 +67,6 @@ NetworkWatcher-Build-Artifacts.zip
 
 ### 🔍 What's NOT Included
 
-- ❌ **VSIX file** - This is available separately as the main download
 - ❌ **Source code** - Available in the GitHub repository
 - ❌ **Intermediate build files** - Only final outputs (no .obj files)
 - ❌ **Debug build** - Only Release configuration binaries
