@@ -62,3 +62,68 @@ Dependencies
 License
 - MIT License (see LICENSE.md for details).
 
+Add the helper script or set PATH manually
+-----------------------------------------
+
+This repository includes a small PowerShell helper `install-path.ps1` to guide you through adding the build output folder (for example `bin\Debug\net10.0`) to your PATH. Two options are provided below.
+
+1) Use the included script (recommended)
+- Open PowerShell (you can run non-elevated to update the user PATH).
+- From the repository root run:
+
+  pwsh .\install-path.ps1
+
+  or (if your system associates .ps1 files with PowerShell):
+
+  .\install-path.ps1
+
+- The script will:
+  - suggest typical build folders (`bin\Debug\net10.0` and `bin\Release\net10.0`),
+  - optionally create the folder if it does not exist,
+  - let you choose to add the folder to the User PATH or the Machine PATH (the latter requires Administrator).
+
+2) Manual method (quick example)
+- Build the project first (e.g. `dotnet build`).
+- Find the folder that contains `NetworkWatcher.exe` (for example `C:\Users\<you>\source\repos\NetworkWatcher\bin\Debug\net10.0`).
+- Add it to your user PATH from PowerShell (no elevation required):
+
+  $folder = 'C:\Users\<you>\source\repos\NetworkWatcher\bin\Debug\net10.0'
+  $old = [Environment]::GetEnvironmentVariable('Path','User')
+  [Environment]::SetEnvironmentVariable('Path', "$old;$folder", 'User')
+
+- Or set it with `setx` from an elevated prompt for system-wide PATH (careful with length limits):
+
+  setx /M PATH "%PATH%;C:\Users\<you>\source\repos\NetworkWatcher\bin\Debug\net10.0"
+
+Example end-to-end
+- Build the app:
+
+  dotnet build
+
+- Add build folder to PATH using the script or the manual commands above.
+- Open a new elevated terminal and run (example):
+
+  NetworkWatcher --domain example.com -p
+
+  - `-p` enables JSON prettify/colorization; omit it to be asked interactively.
+
+Notes
+- After changing PATH open a new terminal to pick up the change.
+- Running NetworkWatcher to create/trust a local root certificate and to set the system proxy typically requires Administrator privileges on Windows.
+
+Optional: add the built executable to your PATH (Windows)
+If you want to run `NetworkWatcher` from any command prompt without specifying the full path, you can add the build output folder to your system `PATH`. Steps:
+
+- Build the project (e.g. `dotnet build` or build in Visual Studio).
+- Locate the build output folder. By default Visual Studio places the executable in your project folder under `bin\Debug\<TFM>\` (for example `bin\Debug\net10.0\`).
+- GUI method:
+  - Open Start → type "Edit the system environment variables" → Environment Variables → select `Path` under your user or system variables → Edit → New → paste the folder path → OK.
+  - Open a new Command Prompt or PowerShell window and run `NetworkWatcher.exe -p` (or `NetworkWatcher -p`).
+- PowerShell method (example):
+  - Run in an elevated PowerShell if you want to set system-level PATH, or in a normal PowerShell to set the user PATH:
+    - setx PATH "$Env:PATH;C:\full\path\to\NetworkWatcher\bin\Debug\net10.0"
+  - Close and reopen your terminal for the change to take effect.
+- Alternative: copy `NetworkWatcher.exe` to a folder already in your PATH (for example `C:\Tools`) so you can run `NetworkWatcher -p` directly.
+
+Note: when running the tool from the command line you may need to start the shell as Administrator so the application can create/trust the local root certificate and set the system proxy.
+
