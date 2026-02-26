@@ -4,4 +4,5 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="NetworkWatcher/NetworkWatcher.csproj" />
+  <Project Path="NetworkWatcherExtension/NetworkWatcherExtension.csproj" Id="90959726-4834-4f6b-bb45-f729740c2ffe" />
 </Solution>
