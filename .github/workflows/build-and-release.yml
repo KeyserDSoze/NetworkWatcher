@@ -9,7 +9,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    
+    permissions:
+      contents: write  # Required to create releases
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -19,24 +21,63 @@ jobs:
       
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
-      
+
+    - name: Setup Visual Studio SDK
+      shell: pwsh
+      run: |
+        Write-Host "=== Checking Visual Studio SDK ==="
+        $vsPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
+        if (-not (Test-Path $vsPath)) {
+          $vsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise"
+        }
+        if (Test-Path $vsPath) {
+          Write-Host "✅ Visual Studio found at: $vsPath"
+        } else {
+          Write-Host "⚠️ Visual Studio path not found, relying on MSBuild"
+        }
+        Write-Host "VSToolsPath environment variable:"
+        Write-Host $env:VSToolsPath
+
     - name: Restore NuGet packages
       run: nuget restore NetworkWatcherExtension\NetworkWatcherExtension.csproj
       
     - name: Build VSIX
-      run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Release /p:DeployExtension=false /p:ZipPackageCompressionLevel=normal /v:m
-      
+      run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Release /p:DeployExtension=false /p:CreateVsixContainer=true /p:ZipPackageCompressionLevel=normal /v:m
+
+    - name: Verify Build Output
+      shell: pwsh
+      run: |
+        Write-Host "=== Verifying build output ==="
+        if (Test-Path "NetworkWatcherExtension\bin\Release") {
+          Write-Host "✅ Release folder exists"
+          Write-Host "Contents:"
+          Get-ChildItem -Path "NetworkWatcherExtension\bin\Release" | Format-Table Name, Length
+        } else {
+          Write-Host "❌ Release folder not found!"
+          Write-Host "Available folders:"
+          Get-ChildItem -Path "NetworkWatcherExtension\bin" | Format-Table Name
+          exit 1
+        }
+
     - name: Find VSIX file
       id: find_vsix
       shell: pwsh
       run: |
+        Write-Host "=== Searching for VSIX file ==="
+        Write-Host "Current directory: $(Get-Location)"
+        Write-Host "Listing bin\Release contents:"
+        Get-ChildItem -Path "NetworkWatcherExtension\bin\Release" -Recurse | Format-Table FullName, Length
+
         $vsixFile = Get-ChildItem -Path "NetworkWatcherExtension\bin\Release" -Filter "*.vsix" -Recurse | Select-Object -First 1
         if ($vsixFile) {
           echo "VSIX_PATH=$($vsixFile.FullName)" >> $env:GITHUB_OUTPUT
           echo "VSIX_NAME=$($vsixFile.Name)" >> $env:GITHUB_OUTPUT
-          Write-Host "Found VSIX: $($vsixFile.FullName)"
+          Write-Host "✅ Found VSIX: $($vsixFile.FullName)"
+          Write-Host "   Size: $([math]::Round($vsixFile.Length / 1MB, 2)) MB"
         } else {
-          Write-Error "VSIX file not found!"
+          Write-Host "❌ VSIX file not found in NetworkWatcherExtension\bin\Release"
+          Write-Host "Searching in entire bin directory:"
+          Get-ChildItem -Path "NetworkWatcherExtension\bin" -Filter "*.vsix" -Recurse | Format-Table FullName
           exit 1
         }
     

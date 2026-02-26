@@ -27,12 +27,15 @@ jobs:
       run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Debug /p:DeployExtension=false /v:m
       
     - name: Build Extension (Release)
-      run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Release /p:DeployExtension=false /v:m
+      run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Release /p:DeployExtension=false /p:CreateVsixContainer=true /v:m
       
     - name: Find VSIX file
       id: find_vsix
       shell: pwsh
       run: |
+        Write-Host "=== Searching for VSIX file ==="
+        Get-ChildItem -Path "NetworkWatcherExtension\bin\Release" -Recurse | Where-Object { $_.Extension -eq ".vsix" -or $_.Extension -eq ".dll" } | Format-Table FullName, Length
+
         $vsixFile = Get-ChildItem -Path "NetworkWatcherExtension\bin\Release" -Filter "*.vsix" -Recurse | Select-Object -First 1
         if ($vsixFile) {
           echo "VSIX_PATH=$($vsixFile.FullName)" >> $env:GITHUB_OUTPUT
@@ -40,7 +43,9 @@ jobs:
           Write-Host "✅ Build successful: $($vsixFile.Name)"
           Write-Host "📦 Size: $([math]::Round($vsixFile.Length / 1MB, 2)) MB"
         } else {
-          Write-Error "❌ VSIX file not found!"
+          Write-Host "❌ VSIX file not found in bin\Release"
+          Write-Host "Searching entire bin directory:"
+          Get-ChildItem -Path "NetworkWatcherExtension\bin" -Filter "*.vsix" -Recurse | Format-Table FullName
           exit 1
         }
     
