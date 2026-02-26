@@ -55,3 +55,44 @@ jobs:
         name: NetworkWatcher-VSIX-${{ github.sha }}
         path: ${{ steps.find_vsix.outputs.VSIX_PATH }}
         retention-days: 30
+
+    - name: Create Build Artifacts Package
+      shell: pwsh
+      run: |
+        Write-Host "=== Creating build artifacts package ==="
+
+        $outputDir = "NetworkWatcher-Build-Artifacts"
+        New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+
+        $releaseDir = "NetworkWatcherExtension\bin\Release"
+        Get-ChildItem -Path $releaseDir -Recurse | Where-Object { 
+          $_.Extension -in @('.dll', '.pdb', '.xml', '.json') -and 
+          -not $_.FullName.Contains('obj') 
+        } | ForEach-Object {
+          $relativePath = $_.FullName.Substring((Resolve-Path $releaseDir).Path.Length + 1)
+          $targetPath = Join-Path $outputDir $relativePath
+          $targetDir = Split-Path $targetPath -Parent
+
+          if (-not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+          }
+
+          Copy-Item $_.FullName -Destination $targetPath
+        }
+
+        $zipPath = "NetworkWatcher-Build-Artifacts.zip"
+        Compress-Archive -Path "$outputDir\*" -DestinationPath $zipPath -Force
+
+        Write-Host "✅ Created build artifacts ZIP"
+        Write-Host "📦 Size: $([math]::Round((Get-Item $zipPath).Length / 1MB, 2)) MB"
+
+        echo "BUILD_ZIP_PATH=$zipPath" >> $env:GITHUB_OUTPUT
+      id: create_build_package
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetworkWatcher-Build-${{ github.sha }}
+        path: ${{ steps.create_build_package.outputs.BUILD_ZIP_PATH }}
+        retention-days: 30
+

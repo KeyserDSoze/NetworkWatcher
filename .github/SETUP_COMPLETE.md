@@ -11,12 +11,14 @@ Your repository now has a **complete CI/CD pipeline** with the following files:
    - Runs on every push and pull request
    - Validates that your code builds correctly
    - Uploads VSIX artifacts (30-day retention)
+   - Uploads Build Artifacts ZIP (DLLs, PDBs) for debugging
 
 2. **`.github/workflows/build-and-release.yml`**
    - Automated release creation
    - Triggers when you push a version tag (e.g., `v1.0.0`)
    - Creates a GitHub Release with VSIX attached
    - Auto-generates release notes
+   - Includes Build Artifacts ZIP for developers
 
 ### 📚 Documentation Files
 
