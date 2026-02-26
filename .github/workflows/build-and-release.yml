@@ -40,7 +40,40 @@ jobs:
 
     - name: Restore NuGet packages
       run: nuget restore NetworkWatcherExtension\NetworkWatcherExtension.csproj
-      
+
+    - name: Update VSIX Version from Tag
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: pwsh
+      run: |
+        Write-Host "=== Updating VSIX version from Git tag ==="
+
+        # Extract version from tag (e.g., v1.2.3 -> 1.2.3)
+        $tagName = "${{ github.ref_name }}"
+        Write-Host "Git tag: $tagName"
+
+        if ($tagName -match '^v?(\d+\.\d+\.\d+)') {
+          $version = $matches[1]
+          Write-Host "Extracted version: $version"
+
+          # Update source.extension.vsixmanifest
+          $manifestPath = "NetworkWatcherExtension\source.extension.vsixmanifest"
+          $manifest = Get-Content $manifestPath -Raw
+
+          # Replace version in Identity element
+          $manifest = $manifest -replace '(<Identity[^>]+Version=")[^"]+(")', "`${1}$version`$2"
+
+          Set-Content $manifestPath -Value $manifest -NoNewline
+
+          Write-Host "✅ Updated manifest version to: $version"
+
+          # Show the change
+          Write-Host "Updated line:"
+          Get-Content $manifestPath | Select-String "Version="
+        } else {
+          Write-Host "⚠️ Tag format not recognized. Expected: v1.2.3"
+          Write-Host "Using existing version in manifest"
+        }
+
     - name: Build VSIX
       run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Release /p:DeployExtension=false /p:CreateVsixContainer=true /p:ZipPackageCompressionLevel=normal /v:m
 
@@ -80,7 +113,39 @@ jobs:
           Get-ChildItem -Path "NetworkWatcherExtension\bin" -Filter "*.vsix" -Recurse | Format-Table FullName
           exit 1
         }
-    
+
+    - name: Verify VSIX Version
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: pwsh
+      run: |
+        Write-Host "=== Verifying VSIX version ==="
+
+        $vsixPath = "${{ steps.find_vsix.outputs.VSIX_PATH }}"
+        $tagName = "${{ github.ref_name }}"
+
+        # Extract version from tag
+        if ($tagName -match '^v?(\d+\.\d+\.\d+)') {
+          $expectedVersion = $matches[1]
+
+          # Read manifest to verify version
+          $manifestPath = "NetworkWatcherExtension\source.extension.vsixmanifest"
+          $manifestContent = Get-Content $manifestPath -Raw
+
+          if ($manifestContent -match 'Version="([^"]+)"') {
+            $actualVersion = $matches[1]
+            Write-Host "Tag version: $expectedVersion"
+            Write-Host "VSIX version: $actualVersion"
+
+            if ($expectedVersion -eq $actualVersion) {
+              Write-Host "✅ Version match confirmed!"
+            } else {
+              Write-Host "⚠️ Version mismatch detected!"
+              Write-Host "   Tag: v$expectedVersion"
+              Write-Host "   VSIX: $actualVersion"
+            }
+          }
+        }
+
     - name: Upload VSIX artifact
       uses: actions/upload-artifact@v4
       with:

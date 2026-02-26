@@ -16,28 +16,24 @@ This guide walks you through creating your **first automated release** of the Ne
 
 ## Step-by-Step Instructions
 
-### 1️⃣ **Verify Current Version**
+### 1️⃣ **Commit Your Changes**
 
-Check the current version in `source.extension.vsixmanifest`:
-
-```bash
-# Open the file
-code NetworkWatcherExtension\source.extension.vsixmanifest
-```
-
-Look for the `Version` attribute:
-```xml
-<Identity ... Version="1.0" ... />
-```
-
-Let's bump it to `1.0.0` (or your preferred version):
-```xml
-<Identity ... Version="1.0.0" ... />
-```
-
-### 2️⃣ **Commit the Version Change**
+Make sure all your code changes are committed:
 
 ```bash
+# Stage all changes
+git add .
+
+# Commit with a clear message
+git commit -m "feat: Add new feature XYZ"
+
+# Push to GitHub
+git push origin master
+```
+
+**Note:** You do NOT need to manually update the version in `source.extension.vsixmanifest`! The workflow will do this automatically based on your Git tag. ✨
+
+### 2️⃣ **Create and Push the Git Tag**
 # Stage all changes
 git add .
 
@@ -50,13 +46,17 @@ git push origin master
 
 ### 3️⃣ **Create and Push the Git Tag**
 
+**The tag version automatically becomes the VSIX version!**
+
 ```bash
-# Create a version tag (must start with 'v')
+# Create a version tag (format: vMAJOR.MINOR.PATCH)
 git tag v1.0.0
 
 # Push the tag to GitHub (this triggers the release workflow!)
 git push origin v1.0.0
 ```
+
+**✨ Magic happens:** GitHub Actions automatically updates the VSIX version to match the tag (1.0.0)!
 
 ### 4️⃣ **Watch the GitHub Action Run**
 
@@ -68,8 +68,10 @@ git push origin v1.0.0
 Expected steps:
 - ✅ Checkout code
 - ✅ Setup MSBuild
+- ✅ **Update VSIX Version from Tag** ⭐ NEW!
 - ✅ Restore NuGet packages
 - ✅ Build VSIX
+- ✅ **Verify VSIX Version** ⭐ NEW!
 - ✅ Upload artifact
 - ✅ Create GitHub Release
 
