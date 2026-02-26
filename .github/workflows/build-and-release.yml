@@ -1,0 +1,79 @@
+name: Build and Release VSIX
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags like v1.0.0, v1.2.3, etc.
+  workflow_dispatch:  # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+      
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+      
+    - name: Restore NuGet packages
+      run: nuget restore NetworkWatcherExtension\NetworkWatcherExtension.csproj
+      
+    - name: Build VSIX
+      run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Release /p:DeployExtension=false /p:ZipPackageCompressionLevel=normal /v:m
+      
+    - name: Find VSIX file
+      id: find_vsix
+      shell: pwsh
+      run: |
+        $vsixFile = Get-ChildItem -Path "NetworkWatcherExtension\bin\Release" -Filter "*.vsix" -Recurse | Select-Object -First 1
+        if ($vsixFile) {
+          echo "VSIX_PATH=$($vsixFile.FullName)" >> $env:GITHUB_OUTPUT
+          echo "VSIX_NAME=$($vsixFile.Name)" >> $env:GITHUB_OUTPUT
+          Write-Host "Found VSIX: $($vsixFile.FullName)"
+        } else {
+          Write-Error "VSIX file not found!"
+          exit 1
+        }
+    
+    - name: Upload VSIX artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetworkWatcher-VSIX
+        path: ${{ steps.find_vsix.outputs.VSIX_PATH }}
+        retention-days: 90
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.find_vsix.outputs.VSIX_PATH }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        body: |
+          ## 🎉 Network Watcher Extension Release
+          
+          ### Installation
+          1. Download the `.vsix` file below
+          2. Close all Visual Studio instances
+          3. Double-click the `.vsix` file to install
+          4. Restart Visual Studio
+          5. Open **View → Other Windows → Network Watcher**
+          
+          ### Features
+          - 🌐 HTTP/HTTPS traffic monitoring
+          - 🔍 Request/Response inspection
+          - 🎨 JSON prettification
+          - 🔎 Search functionality with highlighting
+          - 🌙 Dark theme optimized UI
+          
+          ### Requirements
+          - Visual Studio 2022 or later
+          - .NET Framework 4.7.2 or later
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

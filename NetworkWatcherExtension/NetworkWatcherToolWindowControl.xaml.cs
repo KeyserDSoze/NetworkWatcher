@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Media;
 using Titanium.Web.Proxy;
 using Titanium.Web.Proxy.EventArguments;
 using Titanium.Web.Proxy.Models;
@@ -557,10 +559,10 @@ namespace NetworkWatcherExtension
         {
             if (RequestListView.SelectedItem is HttpTrafficEntry entry)
             {
-                RequestHeadersBox.Text = entry.RequestHeaders ?? string.Empty;
-                RequestBodyBox.Text = entry.RequestBody ?? string.Empty;
-                ResponseHeadersBox.Text = entry.ResponseHeaders ?? string.Empty;
-                ResponseBodyBox.Text = entry.ResponseBody ?? string.Empty;
+                SetRichTextBoxText(RequestHeadersBox, entry.RequestHeaders ?? string.Empty);
+                SetRichTextBoxText(RequestBodyBox, entry.RequestBody ?? string.Empty);
+                SetRichTextBoxText(ResponseHeadersBox, entry.ResponseHeaders ?? string.Empty);
+                SetRichTextBoxText(ResponseBodyBox, entry.ResponseBody ?? string.Empty);
             }
             else
             {
@@ -568,12 +570,23 @@ namespace NetworkWatcherExtension
             }
         }
 
+        private void SetRichTextBoxText(RichTextBox richTextBox, string text)
+        {
+            richTextBox.Document.Blocks.Clear();
+            if (!string.IsNullOrEmpty(text))
+            {
+                var paragraph = new Paragraph(new Run(text));
+                paragraph.Margin = new Thickness(0);
+                richTextBox.Document.Blocks.Add(paragraph);
+            }
+        }
+
         private void ClearDetailsView()
         {
-            RequestHeadersBox.Text = string.Empty;
-            RequestBodyBox.Text = string.Empty;
-            ResponseHeadersBox.Text = string.Empty;
-            ResponseBodyBox.Text = string.Empty;
+            RequestHeadersBox.Document.Blocks.Clear();
+            RequestBodyBox.Document.Blocks.Clear();
+            ResponseHeadersBox.Document.Blocks.Clear();
+            ResponseBodyBox.Document.Blocks.Clear();
 
             // Clear search boxes and results
             RequestHeadersSearchBox.Clear();
@@ -603,7 +616,7 @@ namespace NetworkWatcherExtension
                 return;
 
             var searchText = searchBox.Text;
-            TextBox targetBox = null;
+            RichTextBox targetBox = null;
             TextBlock resultLabel = null;
             List<int> matchList = null;
 
@@ -636,19 +649,22 @@ namespace NetworkWatcherExtension
             if (targetBox == null || resultLabel == null || matchList == null)
                 return;
 
+            // Get the full text from the RichTextBox
+            var textRange = new TextRange(targetBox.Document.ContentStart, targetBox.Document.ContentEnd);
+            var content = textRange.Text;
+
             // Clear previous search results
             matchList.Clear();
-            targetBox.Select(0, 0);
 
             if (string.IsNullOrWhiteSpace(searchText))
             {
                 resultLabel.Text = string.Empty;
                 SetCurrentMatchIndex(searchBox, -1);
+                // Reset text formatting (remove red highlights)
+                HighlightMatches(targetBox, content, null, 0);
                 return;
             }
 
-            // Perform search
-            var content = targetBox.Text;
             if (string.IsNullOrEmpty(content))
             {
                 resultLabel.Text = "No content";
@@ -668,12 +684,91 @@ namespace NetworkWatcherExtension
             {
                 // Start at the first match
                 SetCurrentMatchIndex(searchBox, 0);
-                HighlightCurrentMatch(searchBox, targetBox, resultLabel, searchText.Length);
+                resultLabel.Text = $"1/{matchList.Count} matches";
+
+                // Highlight ALL matches in red
+                HighlightMatches(targetBox, content, searchText, matchList.Count);
+
+                // Scroll to first match
+                ScrollToMatch(targetBox, matchList[0]);
             }
             else
             {
                 resultLabel.Text = "No matches found";
                 SetCurrentMatchIndex(searchBox, -1);
+                // Reset formatting
+                HighlightMatches(targetBox, content, null, 0);
+            }
+        }
+
+        private void HighlightMatches(RichTextBox richTextBox, string fullText, string searchText, int matchCount)
+        {
+            richTextBox.Document.Blocks.Clear();
+
+            if (string.IsNullOrWhiteSpace(searchText) || matchCount == 0)
+            {
+                // No highlighting, just plain text
+                var paragraph = new Paragraph(new Run(fullText));
+                paragraph.Margin = new Thickness(0);
+                richTextBox.Document.Blocks.Add(paragraph);
+                return;
+            }
+
+            // Create paragraph with highlighted matches
+            var para = new Paragraph();
+            para.Margin = new Thickness(0);
+
+            int lastIndex = 0;
+            int searchIndex = 0;
+
+            while ((searchIndex = fullText.IndexOf(searchText, lastIndex, StringComparison.OrdinalIgnoreCase)) >= 0)
+            {
+                // Add normal text before the match
+                if (searchIndex > lastIndex)
+                {
+                    para.Inlines.Add(new Run(fullText.Substring(lastIndex, searchIndex - lastIndex))
+                    {
+                        Foreground = new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA)) // #AAAAAA
+                    });
+                }
+
+                // Add highlighted match in RED
+                para.Inlines.Add(new Run(fullText.Substring(searchIndex, searchText.Length))
+                {
+                    Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x00, 0x00)), // Red
+                    FontWeight = FontWeights.Bold
+                });
+
+                lastIndex = searchIndex + searchText.Length;
+            }
+
+            // Add remaining text after last match
+            if (lastIndex < fullText.Length)
+            {
+                para.Inlines.Add(new Run(fullText.Substring(lastIndex))
+                {
+                    Foreground = new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA))
+                });
+            }
+
+            richTextBox.Document.Blocks.Add(para);
+        }
+
+        private void ScrollToMatch(RichTextBox richTextBox, int matchPosition)
+        {
+            try
+            {
+                var start = richTextBox.Document.ContentStart;
+                var pointer = start.GetPositionAtOffset(matchPosition);
+                if (pointer != null)
+                {
+                    var rect = pointer.GetCharacterRect(LogicalDirection.Forward);
+                    richTextBox.ScrollToVerticalOffset(rect.Top);
+                }
+            }
+            catch
+            {
+                // Ignore scrolling errors
             }
         }
 
@@ -690,7 +785,7 @@ namespace NetworkWatcherExtension
             if (string.IsNullOrWhiteSpace(searchText))
                 return;
 
-            TextBox targetBox = null;
+            RichTextBox targetBox = null;
             TextBlock resultLabel = null;
             List<int> matchList = null;
             int currentMatchIndex = -1;
@@ -732,8 +827,9 @@ namespace NetworkWatcherExtension
             currentMatchIndex = (currentMatchIndex + 1) % matchList.Count;
             SetCurrentMatchIndex(searchBox, currentMatchIndex);
 
-            // Highlight the current match
-            HighlightCurrentMatch(searchBox, targetBox, resultLabel, searchText.Length);
+            // Update label and scroll
+            resultLabel.Text = $"{currentMatchIndex + 1}/{matchList.Count} matches";
+            ScrollToMatch(targetBox, matchList[currentMatchIndex]);
 
             // Prevent the Enter key from doing anything else (like triggering button clicks)
             e.Handled = true;
@@ -749,55 +845,6 @@ namespace NetworkWatcherExtension
                 responseHeadersCurrentMatch = index;
             else if (searchBox == ResponseBodySearchBox)
                 responseBodyCurrentMatch = index;
-        }
-
-        private void HighlightCurrentMatch(TextBox searchBox, TextBox targetBox, TextBlock resultLabel, int searchLength)
-        {
-            List<int> matchList = null;
-            int currentMatchIndex = -1;
-
-            if (searchBox == RequestHeadersSearchBox)
-            {
-                matchList = requestHeadersSearchMatches;
-                currentMatchIndex = requestHeadersCurrentMatch;
-            }
-            else if (searchBox == RequestBodySearchBox)
-            {
-                matchList = requestBodySearchMatches;
-                currentMatchIndex = requestBodyCurrentMatch;
-            }
-            else if (searchBox == ResponseHeadersSearchBox)
-            {
-                matchList = responseHeadersSearchMatches;
-                currentMatchIndex = responseHeadersCurrentMatch;
-            }
-            else if (searchBox == ResponseBodySearchBox)
-            {
-                matchList = responseBodySearchMatches;
-                currentMatchIndex = responseBodyCurrentMatch;
-            }
-
-            if (matchList == null || currentMatchIndex < 0 || currentMatchIndex >= matchList.Count)
-                return;
-
-            // Get the position of the current match
-            int matchPosition = matchList[currentMatchIndex];
-
-            // Update result label with current position
-            resultLabel.Text = $"{currentMatchIndex + 1}/{matchList.Count} matches";
-
-            // Briefly give focus to detail box to show selection, then return to search box
-            targetBox.Focus();
-            targetBox.Select(matchPosition, searchLength);
-            targetBox.ScrollToLine(targetBox.GetLineIndexFromCharacterIndex(matchPosition));
-
-            // Use Dispatcher to return focus to search box after selection is rendered
-            Dispatcher.BeginInvoke(new Action(() => 
-            {
-                searchBox.Focus();
-                // Keep cursor at the end of search text
-                searchBox.SelectionStart = searchBox.Text.Length;
-            }), System.Windows.Threading.DispatcherPriority.Background);
         }
     }
 

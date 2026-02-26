@@ -1,0 +1,52 @@
+name: CI Build
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+      
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+      
+    - name: Restore NuGet packages
+      run: nuget restore NetworkWatcherExtension\NetworkWatcherExtension.csproj
+      
+    - name: Build Extension (Debug)
+      run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Debug /p:DeployExtension=false /v:m
+      
+    - name: Build Extension (Release)
+      run: msbuild NetworkWatcherExtension\NetworkWatcherExtension.csproj /p:Configuration=Release /p:DeployExtension=false /v:m
+      
+    - name: Find VSIX file
+      id: find_vsix
+      shell: pwsh
+      run: |
+        $vsixFile = Get-ChildItem -Path "NetworkWatcherExtension\bin\Release" -Filter "*.vsix" -Recurse | Select-Object -First 1
+        if ($vsixFile) {
+          echo "VSIX_PATH=$($vsixFile.FullName)" >> $env:GITHUB_OUTPUT
+          echo "VSIX_NAME=$($vsixFile.Name)" >> $env:GITHUB_OUTPUT
+          Write-Host "✅ Build successful: $($vsixFile.Name)"
+          Write-Host "📦 Size: $([math]::Round($vsixFile.Length / 1MB, 2)) MB"
+        } else {
+          Write-Error "❌ VSIX file not found!"
+          exit 1
+        }
+    
+    - name: Upload VSIX artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NetworkWatcher-VSIX-${{ github.sha }}
+        path: ${{ steps.find_vsix.outputs.VSIX_PATH }}
+        retention-days: 30

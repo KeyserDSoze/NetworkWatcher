@@ -4,6 +4,7 @@
     <Identity Id="NetworkWatcherExtension.3b271ed4-b286-41eb-98c2-49cd3fa520d1" Version="1.0" Language="en-US" Publisher="Alessandro Rapiti" />
     <DisplayName>Network Watcher</DisplayName>
     <Description>Monitor HTTP/HTTPS network traffic during debugging with filtering and JSON prettification support.</Description>
+    <Icon>Resources\Icon_128.png</Icon>
   </Metadata>
   <Installation>
     <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, )">

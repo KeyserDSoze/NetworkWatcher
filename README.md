@@ -1,6 +1,11 @@
 # NetworkWatcher
 
-NetworkWatcher is a small .NET console application that runs an explicit HTTP/HTTPS proxy and logs HTTP requests and responses that match a configurable domain filter.
+[![CI Build](https://github.com/KeyserDSoze/NetworkWatcher/actions/workflows/ci-build.yml/badge.svg)](https://github.com/KeyserDSoze/NetworkWatcher/actions/workflows/ci-build.yml)
+[![Release](https://github.com/KeyserDSoze/NetworkWatcher/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/KeyserDSoze/NetworkWatcher/actions/workflows/build-and-release.yml)
+[![GitHub release](https://img.shields.io/github/v/release/KeyserDSoze/NetworkWatcher)](https://github.com/KeyserDSoze/NetworkWatcher/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/KeyserDSoze/NetworkWatcher/total)](https://github.com/KeyserDSoze/NetworkWatcher/releases)
+
+NetworkWatcher is a **Visual Studio extension** and .NET console application that monitors HTTP/HTTPS network traffic with filtering, JSON prettification, and search capabilities.
 
 Key points
 - Uses `Titanium.Web.Proxy` to capture HTTP and HTTPS traffic.

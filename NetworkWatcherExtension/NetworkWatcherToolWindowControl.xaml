@@ -79,17 +79,20 @@
             <Setter Property="FontSize" Value="11"/>
         </Style>
 
-        <!-- Style for detail TextBox with visible inactive selection -->
-        <Style x:Key="DetailTextBoxStyle" TargetType="TextBox">
+        <!-- Style for detail RichTextBox with text wrapping -->
+        <Style x:Key="DetailRichTextBoxStyle" TargetType="RichTextBox">
             <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="Foreground" Value="#AAAAAA"/>
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
-            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
-            <!-- Make selection visible even when TextBox doesn't have focus -->
-            <Setter Property="SelectionBrush" Value="#264F78"/>
+            <!-- No horizontal scroll, text wraps instead -->
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <!-- Disable text selection -->
+            <Setter Property="IsDocumentEnabled" Value="True"/>
         </Style>
     </UserControl.Resources>
     <Grid>
@@ -176,7 +179,7 @@
                         <TextBox x:Name="RequestHeadersSearchBox" Width="200" Style="{StaticResource SearchBoxStyle}" TextChanged="SearchBox_TextChanged"/>
                         <TextBlock x:Name="RequestHeadersSearchResult" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#999999"/>
                     </StackPanel>
-                    <TextBox x:Name="RequestHeadersBox" Style="{StaticResource DetailTextBoxStyle}"/>
+                    <RichTextBox x:Name="RequestHeadersBox" Style="{StaticResource DetailRichTextBoxStyle}"/>
                 </DockPanel>
             </TabItem>
             <TabItem Header="Request Body">
@@ -186,7 +189,7 @@
                         <TextBox x:Name="RequestBodySearchBox" Width="200" Style="{StaticResource SearchBoxStyle}" TextChanged="SearchBox_TextChanged"/>
                         <TextBlock x:Name="RequestBodySearchResult" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#999999"/>
                     </StackPanel>
-                    <TextBox x:Name="RequestBodyBox" Style="{StaticResource DetailTextBoxStyle}"/>
+                    <RichTextBox x:Name="RequestBodyBox" Style="{StaticResource DetailRichTextBoxStyle}"/>
                 </DockPanel>
             </TabItem>
             <TabItem Header="Response Headers">
@@ -196,7 +199,7 @@
                         <TextBox x:Name="ResponseHeadersSearchBox" Width="200" Style="{StaticResource SearchBoxStyle}" TextChanged="SearchBox_TextChanged"/>
                         <TextBlock x:Name="ResponseHeadersSearchResult" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#999999"/>
                     </StackPanel>
-                    <TextBox x:Name="ResponseHeadersBox" Style="{StaticResource DetailTextBoxStyle}"/>
+                    <RichTextBox x:Name="ResponseHeadersBox" Style="{StaticResource DetailRichTextBoxStyle}"/>
                 </DockPanel>
             </TabItem>
             <TabItem Header="Response Body">
@@ -206,7 +209,7 @@
                         <TextBox x:Name="ResponseBodySearchBox" Width="200" Style="{StaticResource SearchBoxStyle}" TextChanged="SearchBox_TextChanged"/>
                         <TextBlock x:Name="ResponseBodySearchResult" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#999999"/>
                     </StackPanel>
-                    <TextBox x:Name="ResponseBodyBox" Style="{StaticResource DetailTextBoxStyle}"/>
+                    <RichTextBox x:Name="ResponseBodyBox" Style="{StaticResource DetailRichTextBoxStyle}"/>
                 </DockPanel>
             </TabItem>
         </TabControl>
