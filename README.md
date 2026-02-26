@@ -45,5 +45,5 @@ Dependencies
 - `Titanium.Web.Proxy` package (referenced in the project file).
 
 License
-- This repository does not include a license file. Add one if you plan to publish the project.
+- MIT License (see LICENSE.md for details).
 
